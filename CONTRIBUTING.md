@@ -369,6 +369,38 @@ Releases are automated via GitHub Actions:
 2. A "Version Packages" PR is automatically created/updated
 3. Merging the Version PR triggers a release to npm
 
+### Publishing New Packages
+
+> **Note:** Only project maintainers with publish access to the `@owf` npm scope can perform the initial package publish. If you're contributing a new package, coordinate with a maintainer to complete this step.
+
+This project uses npm's [trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC-based) for automated releases. However, trusted publishing only works for packages that already exist on npm. **New packages must be published manually first.**
+
+When adding a new package to the monorepo:
+
+1. **Build the package locally:**
+
+   ```bash
+   pnpm build
+   ```
+
+2. **Publish the package manually:**
+
+   ```bash
+   cd packages/your-new-package
+   npm publish --access public
+   ```
+
+   You must be logged into npm (`npm login`) with an account that has publish access to the `@owf` scope.
+
+3. **Configure trusted publishing on npmjs.com:**
+   - Go to `https://www.npmjs.com/package/@owf/your-new-package/access`
+   - In the "Trusted Publisher" section, configure:
+     - **Organization**: `openwallet-foundation-labs`
+     - **Repository**: `identity-common-ts`
+     - **Workflow filename**: `release.yml`
+
+4. **Future releases are automatic** - CI will handle all subsequent publishes via trusted publishing.
+
 Maintainers will handle the release process.
 
 ## Questions?
