@@ -109,8 +109,8 @@ export interface SignedLoTE {
     kid?: string
     x5c?: string[]
   }
-  /** Decoded payload */
-  payload: LoTEDocument
+  /** Decoded payload (the inner LoTE content, without the document wrapper) */
+  payload: LoTE
 }
 
 /** Options for signing a LoTE document */

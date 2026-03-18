@@ -45,7 +45,7 @@ export async function signLoTE(options: SignOptions): Promise<SignedLoTE> {
   }
 
   const encodedHeader = base64urlEncode(JSON.stringify(header))
-  const encodedPayload = base64urlEncode(JSON.stringify(lote))
+  const encodedPayload = base64urlEncode(JSON.stringify(lote.LoTE))
   const signingInput = `${encodedHeader}.${encodedPayload}`
 
   const signature = await signer(signingInput)
@@ -59,7 +59,7 @@ export async function signLoTE(options: SignOptions): Promise<SignedLoTE> {
       kid: keyId,
       x5c: header.x5c as string[] | undefined,
     },
-    payload: lote,
+    payload: lote.LoTE,
   }
 }
 
