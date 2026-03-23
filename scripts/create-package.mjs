@@ -10,7 +10,6 @@
  *   node scripts/create-package.mjs eudi-lote --eudi
  */
 
-import { access } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -57,7 +56,7 @@ const packageJson = {
     directory: `packages/${packageName}`,
   },
   publishConfig: {
-    access: "public",
+    access: 'public',
     module: './dist/index.mjs',
     types: './dist/index.d.mts',
     exports: {
