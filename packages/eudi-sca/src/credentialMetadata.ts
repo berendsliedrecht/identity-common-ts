@@ -22,42 +22,46 @@ const valueTypeValues = Object.values(ValueType).join('|')
 const valueTypeRegex = new RegExp(`^template:(${valueTypeValues})$`)
 const urnRegex = /^urn:eudi:sca:[^:]+:[^:]+(:[^:]+)*:[^:]+$/
 
+const CredentialMetadataDisplaySchema = z
+  .array(
+    z.object({
+      locale: z.string().optional(),
+      name: z.string(),
+      display_type: z.union([z.enum(ValueType), z.string().regex(valueTypeRegex)]).optional(),
+    })
+  )
+  .min(1)
+
+export type CredentialMetadataDisplay = z.infer<typeof CredentialMetadataDisplaySchema>
+
+export const CredentialMetadataClaimsDataTypeSchema = z
+  .object({
+    claims: z.array(
+      z
+        .object({
+          path: z.array(z.union([z.string(), z.null()])),
+          mandatory: z.boolean().optional(),
+          display: CredentialMetadataDisplaySchema.optional(),
+          value_type: z.union([z.enum(ValueType), z.string()]).optional(),
+        })
+        .superRefine((val, ctx) => {
+          if (!val.display && val.value_type !== undefined) {
+            ctx.addIssue({
+              code: 'custom',
+              message: 'value_type must not be used on claims without a display array',
+              path: ['value_type'],
+            })
+          }
+        })
+    ),
+    ui_labels: z.unknown(),
+  })
+  .catchall(z.unknown())
+
+export type CredentialMetadataClaimsDataType = z.infer<typeof CredentialMetadataClaimsDataTypeSchema>
+
 const CredentialMetadataSchema = z.object({
-  transaction_data_types: z.record(
-    z.string().regex(urnRegex),
-    z
-      .object({
-        claims: z.array(
-          z
-            .object({
-              path: z.array(z.union([z.string(), z.null()])),
-              mandatory: z.boolean().optional(),
-              display: z
-                .array(
-                  z.object({
-                    locale: z.string().optional(),
-                    name: z.string(),
-                    display_type: z.union([z.enum(ValueType), z.string().regex(valueTypeRegex)]).optional(),
-                  })
-                )
-                .min(1)
-                .optional(),
-              value_type: z.union([z.enum(ValueType), z.string().regex(valueTypeRegex)]).optional(),
-            })
-            .superRefine((val, ctx) => {
-              if (!val.display && val.value_type !== undefined) {
-                ctx.addIssue({
-                  code: 'custom',
-                  message: 'value_type must not be used on claims without a display array',
-                  path: ['value_type'],
-                })
-              }
-            })
-        ),
-        ui_labels: z.unknown(),
-      })
-      .catchall(z.unknown())
-  ),
+  transaction_data_types: z.record(z.string().regex(urnRegex), CredentialMetadataClaimsDataTypeSchema),
 })
 
 export type CredentialMetadata = z.infer<typeof CredentialMetadataSchema>

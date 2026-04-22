@@ -73,7 +73,7 @@ const base64UrlToBytes = (base64url: string): Uint8Array => {
   return base64ToBytes(base64)
 }
 
-const stringToBytes = (str: string): Uint8Array => {
+export const stringToBytes = (str: string): Uint8Array => {
   const bytes: number[] = []
   for (let i = 0; i < str.length; i++) {
     let codePoint = str.charCodeAt(i)
@@ -111,7 +111,7 @@ const stringToBytes = (str: string): Uint8Array => {
   return new Uint8Array(bytes)
 }
 
-const bytesToString = (bytes: Uint8Array): string => {
+export const bytesToString = (bytes: Uint8Array): string => {
   let result = ''
   let i = 0
 

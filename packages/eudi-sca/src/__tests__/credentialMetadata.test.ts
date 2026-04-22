@@ -5,7 +5,7 @@ import { fetchCredentialMetadata, parseCredentialMetadata } from '../credentialM
 
 export const credential_metadata = {
   transaction_data_types: {
-    'urn:eudi:sca:eu.europa.ec:payment:single:1': {
+    'urn:eudi:sca:com.example.pay:transaction:2': {
       claims: [
         {
           path: ['transaction_id'],
@@ -123,15 +123,15 @@ suite('parse credential metadata', () => {
     expect(() =>
       parseCredentialMetadata({
         transaction_data_types: {
-          'invalid:urn:key': credential_metadata.transaction_data_types['urn:eudi:sca:eu.europa.ec:payment:single:1'],
+          'invalid:urn:key': credential_metadata.transaction_data_types['urn:eudi:sca:com.example.pay:transaction:2'],
         },
       })
     ).toThrow(ZodError)
   })
 
   test('parse invalid credential metadata with incorrect value_type', () => {
-    const invalidCm = credential_metadata
-    invalidCm.transaction_data_types['urn:eudi:sca:eu.europa.ec:payment:single:1'].claims[0].value_type = 'invalid'
+    const invalidCm = structuredClone(credential_metadata)
+    invalidCm.transaction_data_types['urn:eudi:sca:com.example.pay:transaction:2'].claims[0].value_type = 'invalid'
     expect(() => parseCredentialMetadata(invalidCm)).toThrow(ZodError)
   })
 })
