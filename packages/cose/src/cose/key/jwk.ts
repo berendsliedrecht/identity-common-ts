@@ -97,7 +97,7 @@ export const jwkToCoseKey = {
   d: (s?: unknown) => (s && typeof s === 'string' ? base64url.decode(s) : undefined),
 }
 
-export const coseKeyToJwk = {
+export const coseKeyToJwkClaim = {
   keyType: (keyType: KeyType) => coseKeyJwkMap.kty[keyType],
   keyId: (keyId: unknown) => keyId,
   algorithm: (algorithm?: SignatureAlgorithm | MacAlgorithm) => (algorithm ? coseKeyJwkMap.alg[algorithm] : undefined),

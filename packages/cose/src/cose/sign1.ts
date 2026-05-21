@@ -20,7 +20,7 @@ import {
   UnprotectedHeaders,
   unprotectedHeadersStructure,
 } from './headers'
-import { type CoseKey, coseKeyToJwk } from './key'
+import { type CoseKey, coseKeyToJwkClaim } from './key'
 
 export const sign1EncodedSchema = z.tuple([
   // protected headers
@@ -196,7 +196,7 @@ export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStru
       throw new CoseInvalidAlgorithmError()
     }
 
-    const algorithmName = coseKeyToJwk.algorithm(algorithm)
+    const algorithmName = coseKeyToJwkClaim.algorithm(algorithm)
     if (!algorithmName) {
       throw new CoseInvalidAlgorithmError()
     }
