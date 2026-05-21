@@ -22,7 +22,7 @@ import {
   type UnprotectedHeadersStructure,
 } from './headers/unprotected-headers'
 import type { CoseKey } from './key'
-import { coseKeyToJwk } from './key/jwk'
+import { coseKeyToJwkClaim } from './key/jwk'
 
 export const mac0EncodedSchema = z.tuple([
   zUint8Array,
@@ -156,7 +156,7 @@ export class Mac0 extends CborStructure<Mac0EncodedStructure, Mac0DecodedStructu
       throw new CoseInvalidAlgorithmError()
     }
 
-    const algorithmName = coseKeyToJwk.algorithm(algorithm)
+    const algorithmName = coseKeyToJwkClaim.algorithm(algorithm)
 
     if (!algorithmName) {
       throw new CoseInvalidAlgorithmError()

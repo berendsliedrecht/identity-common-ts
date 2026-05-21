@@ -14,7 +14,7 @@ import {
 } from '../error'
 import type { SignatureAlgorithm } from '../headers'
 import { Curve } from './curve'
-import { coseKeyToJwk, coseOptionsJwkMap, jwkCoseOptionsMap, jwkToCoseKey } from './jwk'
+import { coseKeyToJwkClaim, coseOptionsJwkMap, jwkCoseOptionsMap, jwkToCoseKey } from './jwk'
 import { KeyOps } from './key-operation'
 import { KeyType } from './key-type'
 
@@ -258,9 +258,9 @@ export class CoseKey extends CborStructure<CoseKeyEncodedStructure, CoseKeyDecod
         // biome-ignore lint/performance/noAccumulatingSpread: time-complexity is not relevant here
         ...prev,
         [coseOptionsJwkMap[key] ?? key]:
-          typeof coseKeyToJwk[key as keyof typeof coseKeyToJwk] === 'function'
+          typeof coseKeyToJwkClaim[key as keyof typeof coseKeyToJwkClaim] === 'function'
             ? // @ts-ignore
-              coseKeyToJwk[key as keyof typeof coseKeyToJwk](value)
+              coseKeyToJwkClaim[key as keyof typeof coseKeyToJwkClaim](value)
             : undefined,
       }),
       {}
