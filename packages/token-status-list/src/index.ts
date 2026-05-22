@@ -10,10 +10,11 @@ export type {
   StatusListInfoOptions,
 } from './cbor/status-list-info'
 export { StatusListInfo } from './cbor/status-list-info'
+export { fetchStatusList } from './fetch-status-list'
 export type { JWTwithStatusListPayload, StatusListJWTHeaderParameters, StatusListJWTPayload } from './jwt-types'
 export { JWT_STATUS_LIST_TYPE, JWTClaimNames } from './jwt-types'
 export { StatusList } from './status-list'
 export { SLException } from './status-list-exception'
-export { createHeaderAndPayload, getListFromStatusListJWT, getStatusListFromJWT } from './status-list-jwt'
+export { createHeaderAndPayload, getListFromStatusListJWT, getStatusListFromJWT, verifyStatus } from './status-list-jwt'
 export type { BitsPerStatus, StatusListEntry } from './types'
 export { MediaTypes, StatusType } from './types'
