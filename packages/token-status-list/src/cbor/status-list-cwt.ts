@@ -62,7 +62,7 @@ export class StatusListCwt {
 
   /**
    *
-   * Create a minimal status list cwt. If you want to configure more options, use the constructor method
+   * Create a minimal status list cwt. If you want to configure more options, like additional claims, use the constructor method
    *
    */
   public static createFromStatusListAndSubject(

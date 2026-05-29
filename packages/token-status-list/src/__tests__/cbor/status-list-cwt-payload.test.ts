@@ -24,4 +24,32 @@ suite('StatusListCwtPayload', () => {
 
     expect(fromEncoded).toMatchObject(payload)
   })
+
+  test('encode/decode with additional claims', () => {
+    const statusList = new StatusList(new Array(10).fill(0), 4, 'https://example.com/aggregate')
+    statusList.setStatus(0, 1)
+    statusList.setStatus(5, 1)
+
+    const cborStatusList = StatusListCbor.create({
+      statusList,
+    })
+
+    const payload = StatusListCwtPayload.create({
+      subject: 'https://example.com/statuslists/1',
+      issuedAt: new Date(1000000 * 1000),
+      statusList: cborStatusList,
+      additionalClaims: {
+        1000: 'hello world',
+        1001: 'Goodbye!',
+      },
+    })
+
+    const encoded = payload.encode()
+    const fromEncoded = StatusListCwtPayload.decode(encoded)
+
+    expect(fromEncoded.getCustomClaim<string>(1000)).toStrictEqual('hello world')
+    expect(fromEncoded.getCustomClaim<string>(1001)).toStrictEqual('Goodbye!')
+
+    expect(fromEncoded).toMatchObject(payload)
+  })
 })
