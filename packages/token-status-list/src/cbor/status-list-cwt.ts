@@ -170,7 +170,7 @@ export class StatusListCwt {
       signature: this.signatureOrTag,
     })
 
-    return await cwt.asSign1.verifySignature({ key }, ctx)
+    return await cwt.verifySignature({ key }, ctx)
   }
 
   public async verifyAuthenticationCode({ key }: { key: CoseKey }, ctx: Pick<Mac0Context, 'verify'>) {
@@ -181,6 +181,6 @@ export class StatusListCwt {
       tag: this.signatureOrTag,
     })
 
-    return await cwt.asMac0.verifyAuthenticationCode({ key }, ctx)
+    return await cwt.verifyAuthenticationCode({ key }, ctx)
   }
 }
