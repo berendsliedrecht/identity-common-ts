@@ -35,4 +35,8 @@ export class Cwt {
   public get unprotectedHeaders() {
     return this.options.unprotectedHeaders
   }
+
+  public get signatureOrTag() {
+    return 'signature' in this.options ? this.options.signature : 'tag' in this.options ? this.options.tag : undefined
+  }
 }

@@ -1,3 +1,7 @@
+import { timingSafeEqual } from 'node:crypto'
+import { p256 } from '@noble/curves/nist.js'
+import { hmac } from '@noble/hashes/hmac.js'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { CoseKey, KeyType, type Mac0Context, type Sign1Context, SignatureAlgorithm } from '@owf/cose'
 import { expect, suite, test } from 'vitest'
 import { StatusListCbor } from '../../cbor/status-list-cbor'
@@ -7,34 +11,43 @@ import { StatusList } from '../../status-list'
 import { StatusType } from '../../types'
 
 const sign1Context: Sign1Context = {
-  sign: async () => new Uint8Array([1, 2, 3]),
-  verify: async () => true,
-  x509: {
-    getIssuerNameField: () => ['a', 'v'],
-    getPublicKey: async () =>
-      CoseKey.fromJwk({
-        kty: 'EC',
-        d: 'hGc90b8KMIjIpZos81yEFbOMc0Ww3k5ZNWICzDwtFV4',
-        use: 'sig',
-        crv: 'P-256',
-        x: 'eBUFGSPkdYwJ9TqYpcNxhAyr-A8wlWzrLQJppSi3x0E',
-        y: 'Jnf8v4steg6Gr4IEFpg_xcM5xdHKdngbQN9ERJbJvl8',
-        alg: 'ES256',
-      }),
+  sign: async (input) => {
+    const { key, toBeSigned } = input
+    return p256.sign(toBeSigned, key.privateKey, { format: 'compact' })
+  },
+  verify: async (input) => {
+    const { signature, toBeVerified, key } = input
+    return p256.verify(signature, toBeVerified, key instanceof CoseKey ? key.publicKey : key, {
+      lowS: false,
+    })
   },
 }
 
 const mac0Context: Mac0Context = {
-  authenticate: async () => new Uint8Array([4, 5, 6]),
-  verify: async () => true,
+  authenticate: async (input) => {
+    const { key, toBeAuthenticated } = input
+    const keyBytes = key instanceof CoseKey ? key.privateKey : key
+    return hmac(sha256, keyBytes, toBeAuthenticated)
+  },
+  verify: async (input) => {
+    const { tag, toBeAuthenticated, key } = input
+    return timingSafeEqual(tag, hmac(sha256, key instanceof CoseKey ? key.privateKey : key, toBeAuthenticated))
+  },
 }
 
-const key = CoseKey.fromJwk({
+const signKey = CoseKey.fromJwk({
   kty: 'EC',
   crv: 'P-256',
+  alg: 'ES256',
   x: 'usWxHK2PmfnHKwXPS54m0kTcGJ90UiglWiGahtagnv8',
   y: 'IBOL-C3BttVivg-lSreASjpkttcsz-1rb7btKLv8EX4',
   d: 'V8kgd2ZBRuh2dgyVINBUqpPDr7BOMGcF22CQMIUHtNM',
+})
+
+const macKey = CoseKey.fromJwk({
+  kty: 'OCT',
+  k: '6yABWE2AiXBRUvKpr7Uw3eivy0ZluF3CYRpQVpCXbpyCOr6t8Sua4oGjVPfQojfUJ70cJ7MnDoyS7H6bY54w3ZJ7PJgLfHn-XwIVGGZoFdP5O_dO_jhu1ABV6Zwv9lpIm6G6Rl7tOs7dQJr7b6S0aT-yOzEmPx6OBxecykwi_pCkqsY2UypCh_0t5QUhyrK1m3TCMZ6yED8hczgmxUQLpY-BfdByL-26ed4mmD85hDdwhsBYP8HuLVYasTjs21jIVb4wr0BqKiK_St8vUzAeQfU7CAQPrNXdW5kns0QvQLU864WpIZrPK3onm_t2hcXA4975Y_uFHXoMsyNBPAbBuA',
+  alg: 'HS256',
 })
 
 suite('StatusListCwt', () => {
@@ -165,12 +178,12 @@ suite('StatusListCwt', () => {
       )
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
       const decodedStatusListCwt = StatusListCwt.fromToken(token)
-      expect(decodedStatusListCwt).toMatchObject(statusListCwt)
+      expect(decodedStatusListCwt.payload).toMatchObject(statusListCwt.payload)
     })
 
     test('encode/decode with different status values', async () => {
@@ -180,7 +193,7 @@ suite('StatusListCwt', () => {
       )
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
@@ -196,7 +209,7 @@ suite('StatusListCwt', () => {
       )
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
@@ -212,7 +225,7 @@ suite('StatusListCwt', () => {
       )
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
@@ -229,7 +242,7 @@ suite('StatusListCwt', () => {
       )
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
@@ -248,7 +261,7 @@ suite('StatusListCwt', () => {
       })
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
@@ -268,7 +281,7 @@ suite('StatusListCwt', () => {
       })
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
@@ -288,7 +301,7 @@ suite('StatusListCwt', () => {
       })
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
@@ -304,13 +317,10 @@ suite('StatusListCwt', () => {
         'did:you'
       )
 
-      const token = await statusListCwt.authenticateAndEncode(
-        { key: CoseKey.create({ keyType: KeyType.Ec }) },
-        mac0Context
-      )
+      const token = await statusListCwt.authenticateAndEncode({ key: macKey }, mac0Context)
 
       const decodedStatusListCwt = StatusListCwt.fromToken(token)
-      expect(decodedStatusListCwt).toMatchObject(statusListCwt)
+      expect(decodedStatusListCwt.payload).toMatchObject(statusListCwt.payload)
     })
 
     test('encode/decode with mac0 and custom headers', async () => {
@@ -325,10 +335,7 @@ suite('StatusListCwt', () => {
         unprotectedHeaders,
       })
 
-      const token = await statusListCwt.authenticateAndEncode(
-        { key: CoseKey.create({ keyType: KeyType.Ec }) },
-        mac0Context
-      )
+      const token = await statusListCwt.authenticateAndEncode({ key: macKey }, mac0Context)
 
       const decodedStatusListCwt = StatusListCwt.fromToken(token)
       expect(decodedStatusListCwt.protectedHeaders?.headers.get(1)).toBe(123)
@@ -342,7 +349,10 @@ suite('StatusListCwt', () => {
         { statusList: [1, 0, 1], bitsPerStatus: 1 },
         'did:issuer'
       )
-      const token = await original.signAndEncode({ signingKey: key, algorithm: SignatureAlgorithm.ES256 }, sign1Context)
+      const token = await original.signAndEncode(
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
+        sign1Context
+      )
 
       const decoded = StatusListCwt.fromToken(token)
       const result = decoded.payload.statusList.statusList.slice(0, 3)
@@ -355,7 +365,7 @@ suite('StatusListCwt', () => {
         { statusList: [1, 0, 1], bitsPerStatus: 1 },
         'did:issuer'
       )
-      const token = await original.authenticateAndEncode({ key: CoseKey.create({ keyType: KeyType.Ec }) }, mac0Context)
+      const token = await original.authenticateAndEncode({ key: macKey }, mac0Context)
 
       const decoded = StatusListCwt.fromToken(token)
       const result = decoded.payload.statusList.statusList.slice(0, 3)
@@ -368,7 +378,10 @@ suite('StatusListCwt', () => {
         { statusList: [0, 0, 0], bitsPerStatus: 1 },
         'did:test'
       )
-      const token = await original.signAndEncode({ signingKey: key, algorithm: SignatureAlgorithm.ES256 }, sign1Context)
+      const token = await original.signAndEncode(
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
+        sign1Context
+      )
 
       const decoded = StatusListCwt.fromToken(token)
       expect(decoded.protectedHeaders?.headers.get(StatusListCwtHeaderKey.Typ)).toBe('application/statuslist+cwt')
@@ -383,7 +396,7 @@ suite('StatusListCwt', () => {
       const statusListCwt = StatusListCwt.createFromStatusListAndSubject({ statusList, bitsPerStatus: 1 }, 'did:you')
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
@@ -396,7 +409,7 @@ suite('StatusListCwt', () => {
       const statusListCwt = StatusListCwt.createFromStatusListAndSubject({ statusList, bitsPerStatus: 2 }, 'did:you')
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
@@ -417,7 +430,7 @@ suite('StatusListCwt', () => {
       statusListCwt.updateStatusList(1, 1)
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
@@ -435,13 +448,83 @@ suite('StatusListCwt', () => {
       statusListCwt.setStatusList(new StatusList([1, 1, 1], 1))
 
       const token = await statusListCwt.signAndEncode(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
         sign1Context
       )
 
       const decodedStatusListCwt = StatusListCwt.fromToken(token)
       const result = decodedStatusListCwt.payload.statusList.statusList.slice(0, 3)
       expect(result).toEqual([1, 1, 1])
+    })
+  })
+
+  suite('verifySignature', () => {
+    test('should verify valid signature with signKey', async () => {
+      const statusListCwt = StatusListCwt.createFromStatusListAndSubject(
+        { statusList: [0, 1, 0], bitsPerStatus: 1 },
+        'did:test'
+      )
+
+      const token = await statusListCwt.signAndEncode(
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
+        sign1Context
+      )
+
+      const decodedStatusListCwt = StatusListCwt.fromToken(token)
+      const result = await decodedStatusListCwt.verifySignature({ key: signKey }, sign1Context)
+      expect(result).toBe(true)
+    })
+
+    test('should return false for invalid signature', async () => {
+      const statusListCwt = StatusListCwt.createFromStatusListAndSubject(
+        { statusList: [0, 1, 0], bitsPerStatus: 1 },
+        'did:test'
+      )
+
+      const token = await statusListCwt.signAndEncode(
+        { signingKey: signKey, algorithm: SignatureAlgorithm.ES256 },
+        sign1Context
+      )
+
+      const decodedStatusListCwt = StatusListCwt.fromToken(token)
+      const wrongKey = CoseKey.fromJwk({
+        kty: 'EC',
+        crv: 'P-256',
+        x: 'usWxHK2PmfnHKwXPS54m0kTcGJ20UiglWiGaWRNGKEY',
+        y: 'IBOL-C3BttVivg-lSreASjpkttcsz-1rb7btWRNGKEY',
+      })
+
+      const result = await decodedStatusListCwt.verifySignature({ key: wrongKey }, sign1Context)
+      expect(result).toBe(false)
+    })
+  })
+
+  suite('verifyAuthenticationCode', () => {
+    test('should verify valid authentication code with macKey', async () => {
+      const statusListCwt = StatusListCwt.createFromStatusListAndSubject(
+        { statusList: [0, 1, 0], bitsPerStatus: 1 },
+        'did:test'
+      )
+
+      const token = await statusListCwt.authenticateAndEncode({ key: macKey }, mac0Context)
+
+      const decodedStatusListCwt = StatusListCwt.fromToken(token)
+      const result = await decodedStatusListCwt.verifyAuthenticationCode({ key: macKey }, mac0Context)
+      expect(result).toBe(true)
+    })
+
+    test('should return false for invalid authentication code', async () => {
+      const statusListCwt = StatusListCwt.createFromStatusListAndSubject(
+        { statusList: [0, 1, 0], bitsPerStatus: 1 },
+        'did:test'
+      )
+
+      const token = await statusListCwt.authenticateAndEncode({ key: macKey }, mac0Context)
+
+      const decodedStatusListCwt = StatusListCwt.fromToken(token)
+      const wrongKey = CoseKey.create({ keyType: KeyType.Oct, k: new TextEncoder().encode('wrong-key') })
+      const result = await decodedStatusListCwt.verifyAuthenticationCode({ key: wrongKey }, mac0Context)
+      expect(result).toBe(false)
     })
   })
 })

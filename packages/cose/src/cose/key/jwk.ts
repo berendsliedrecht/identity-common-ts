@@ -77,14 +77,14 @@ export const jwkCoseOptionsMap: Record<string, keyof CoseKeyOptions> = {
   x: 'x',
   y: 'y',
   d: 'd',
+  k: 'k',
 }
 
 export const coseOptionsJwkMap = swapMap(jwkCoseOptionsMap)
 
 export const jwkToCoseKey = {
-  kty: (kty?: unknown) => {
-    return jwkCoseKeyMap.kty[kty as keyof (typeof jwkCoseKeyMap)['kty']] ?? kty
-  },
+  kty: (kty?: unknown) =>
+    jwkCoseKeyMap.kty[(kty as string).toUpperCase() as keyof (typeof jwkCoseKeyMap)['kty']] ?? kty,
   crv: (crv?: unknown) => jwkCoseKeyMap.crv[crv as keyof (typeof jwkCoseKeyMap)['crv']] ?? crv,
   alg: (alg?: unknown) => jwkCoseKeyMap.alg[alg as keyof (typeof jwkCoseKeyMap)['alg']] ?? alg,
   kid: (kid?: unknown) => kid,
@@ -95,6 +95,7 @@ export const jwkToCoseKey = {
   x: (s?: unknown) => (s && typeof s === 'string' ? base64url.decode(s) : undefined),
   y: (s?: unknown) => (s && typeof s === 'string' ? base64url.decode(s) : undefined),
   d: (s?: unknown) => (s && typeof s === 'string' ? base64url.decode(s) : undefined),
+  k: (s?: unknown) => (s && typeof s === 'string' ? base64url.decode(s) : undefined),
 }
 
 export const coseKeyToJwkClaim = {
@@ -108,4 +109,5 @@ export const coseKeyToJwkClaim = {
   x: (x?: Uint8Array) => (x ? base64url.encode(x) : undefined),
   y: (y?: Uint8Array) => (y ? base64url.encode(y) : undefined),
   d: (d?: Uint8Array) => (d ? base64url.encode(d) : undefined),
+  k: (k?: Uint8Array) => (k ? base64url.encode(k) : undefined),
 }

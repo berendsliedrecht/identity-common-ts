@@ -20,6 +20,7 @@ export type StatusListCwtOptions = {
   payload: StatusListCwtPayload | CreateStatusListCwtPayloadOptions
   protectedHeaders?: ProtectedHeaders | ProtectedHeaderOptions['protectedHeaders']
   unprotectedHeaders?: UnprotectedHeaders | UnprotectedHeaderOptions['unprotectedHeaders']
+  signatureOrTag?: Uint8Array
 }
 
 export enum StatusListCwtHeaderKey {
@@ -30,6 +31,7 @@ export class StatusListCwt {
   public payload: StatusListCwtPayload
   public protectedHeaders?: ProtectedHeaders
   public unprotectedHeaders?: UnprotectedHeaders
+  private signatureOrTag?: Uint8Array
 
   public constructor(options: StatusListCwtOptions) {
     this.payload =
@@ -42,6 +44,8 @@ export class StatusListCwt {
       options.unprotectedHeaders instanceof UnprotectedHeaders
         ? options.unprotectedHeaders
         : UnprotectedHeaders.create({ unprotectedHeaders: options.unprotectedHeaders })
+
+    this.signatureOrTag = options.signatureOrTag
 
     if (this.protectedHeaders.headers.get(StatusListCwtHeaderKey.Typ) === undefined) {
       this.protectedHeaders.headers.set(StatusListCwtHeaderKey.Typ, MediaTypes.StatusListCwt)
@@ -94,6 +98,7 @@ export class StatusListCwt {
       payload,
       protectedHeaders: cwt.protectedHeaders,
       unprotectedHeaders: cwt.unprotectedHeaders,
+      signatureOrTag: cwt.signatureOrTag,
     })
   }
 
@@ -155,5 +160,27 @@ export class StatusListCwt {
         `Status for id '${idx}' is not Valid (${StatusType.Valid}), but is instead '${this.payload.statusList.getStatus(idx)}'`
       )
     }
+  }
+
+  public async verifySignature({ key }: { key: CoseKey }, ctx: Pick<Sign1Context, 'verify'>) {
+    const cwt = new Cwt({
+      protectedHeaders: this.protectedHeaders,
+      unprotectedHeaders: this.unprotectedHeaders,
+      payload: this.payload.encode(),
+      signature: this.signatureOrTag,
+    })
+
+    return await cwt.asSign1.verifySignature({ key }, ctx)
+  }
+
+  public async verifyAuthenticationCode({ key }: { key: CoseKey }, ctx: Pick<Mac0Context, 'verify'>) {
+    const cwt = new Cwt({
+      protectedHeaders: this.protectedHeaders,
+      unprotectedHeaders: this.unprotectedHeaders,
+      payload: this.payload.encode(),
+      tag: this.signatureOrTag,
+    })
+
+    return await cwt.asMac0.verifyAuthenticationCode({ key }, ctx)
   }
 }

@@ -62,6 +62,8 @@ export type Mac0Options = {
    * via `detachedPayload` when calling `authenticate()` / `toBeAuthenticated()`).
    */
   payload: Uint8Array | null
+
+  tag?: Uint8Array
 }
 
 export class Mac0 extends CborStructure<Mac0EncodedStructure, Mac0DecodedStructure> {
@@ -203,7 +205,7 @@ export class Mac0 extends CborStructure<Mac0EncodedStructure, Mac0DecodedStructu
       protectedHeaders,
       unprotectedHeaders,
       payload: options.payload,
-      tag: new Uint8Array(),
+      tag: options.tag ?? new Uint8Array(),
     })
 
     mac0.externalAad = options.externalAad
@@ -239,6 +241,23 @@ export class Mac0 extends CborStructure<Mac0EncodedStructure, Mac0DecodedStructu
       key: options.key,
     })
     return this
+  }
+
+  public async verifyAuthenticationCode(
+    { key, detachedPayload }: { key: CoseKey; detachedPayload?: Uint8Array },
+    ctx: Pick<Mac0Context, 'verify'>
+  ) {
+    const embeddedPayload = this.payload
+    if (embeddedPayload && detachedPayload) {
+      throw new Error('Cannot provide detachedPayload when the Mac0 already contains an embedded payload')
+    }
+
+    return await ctx.verify({
+      key,
+      tag: this.tag,
+      toBeAuthenticated: this.toBeAuthenticated({ detachedPayload }),
+      algorithm: this.algorithm,
+    })
   }
 }
 
