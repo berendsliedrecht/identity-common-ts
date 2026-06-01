@@ -8,13 +8,16 @@ export enum StatusListCwtClaimKey {
   StatusList = 65533,
 }
 
-const statusListCwtPayloadSchema = typedMap([
-  [RegisteredCwtClaimKey.Subject, z.string()],
-  [RegisteredCwtClaimKey.IssuedAt, z.number()],
-  [RegisteredCwtClaimKey.ExpirationTime, z.number().optional()],
-  [StatusListCwtClaimKey.TimeToLive, z.number().optional()],
-  [StatusListCwtClaimKey.StatusList, z.instanceof(StatusListCbor)],
-])
+const statusListCwtPayloadSchema = typedMap(
+  [
+    [RegisteredCwtClaimKey.Subject, z.string()],
+    [RegisteredCwtClaimKey.IssuedAt, z.number()],
+    [RegisteredCwtClaimKey.ExpirationTime, z.number().optional()],
+    [StatusListCwtClaimKey.TimeToLive, z.number().optional()],
+    [StatusListCwtClaimKey.StatusList, z.instanceof(StatusListCbor)],
+  ],
+  { allowAdditionalKeys: true }
+)
 
 export type StatusListCwtPayloadEncodedStructure = z.infer<typeof statusListCwtPayloadSchema>
 export type StatusListCwtPayloadDecodedStructure = z.infer<typeof statusListCwtPayloadSchema>
@@ -25,6 +28,7 @@ export type CreateStatusListCwtPayloadOptions = {
   issuedAt?: Date
   expirationTime?: Date
   timeToLive?: number
+  additionalClaims?: Map<number | string, unknown>
 }
 
 export class StatusListCwtPayload extends CborStructure<
@@ -54,7 +58,7 @@ export class StatusListCwtPayload extends CborStructure<
   }
 
   public static create(options: CreateStatusListCwtPayloadOptions) {
-    const map: StatusListCwtPayloadEncodedStructure = new TypedMap([
+    const map = new TypedMap([
       [RegisteredCwtClaimKey.Subject, options.subject],
       [RegisteredCwtClaimKey.IssuedAt, Math.floor((options.issuedAt?.getTime() ?? Date.now()) / 1000)],
       [
@@ -68,7 +72,8 @@ export class StatusListCwtPayload extends CborStructure<
           ? options.statusList
           : StatusListCbor.create({ statusList: options.statusList }),
       ],
-    ])
+      ...(options.additionalClaims ?? new Map()).entries(),
+    ]) satisfies StatusListCwtPayloadEncodedStructure
 
     return new StatusListCwtPayload(statusListCwtPayloadSchema.parse(map.toMap()))
   }
@@ -94,6 +99,10 @@ export class StatusListCwtPayload extends CborStructure<
 
   public get statusList() {
     return this.structure.get(StatusListCwtClaimKey.StatusList).statusList
+  }
+
+  public getCustomClaim<ClaimType = unknown>(key: number) {
+    return this.structure.get(key) as ClaimType | unknown
   }
 
   public setStatusList(statusList: StatusList | StatusListCbor) {
