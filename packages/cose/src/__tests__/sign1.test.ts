@@ -48,7 +48,7 @@ describe('sign1', () => {
       expect(tbsHex).toStrictEqual(testVector['sign1::sign'].tbsHex.cborHex)
 
       const isValid = await sign1.verifySignature({ key }, sign1Context)
-      expect(isValid).toBeTruthy()
+      expect(isValid).toBe(true)
 
       const sign1Resigned = Sign1.create({
         protectedHeaders: sign1.protectedHeaders,
@@ -58,12 +58,12 @@ describe('sign1', () => {
       })
 
       const sign1ResignedWithSignature = await sign1Resigned.sign(
-        { signingKey: key, algorithm: SignatureAlgorithm.ES256 },
+        { signingKey: key, algorithm: SignatureAlgorithm.ES256, externalAad: sign1.externalAad },
         sign1Context
       )
 
       const isValidAfterResign = await sign1ResignedWithSignature.verifySignature({ key }, sign1Context)
-      expect(isValidAfterResign).toBeTruthy()
+      expect(isValidAfterResign).toBe(true)
     })
   })
 })

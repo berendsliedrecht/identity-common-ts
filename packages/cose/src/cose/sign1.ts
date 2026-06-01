@@ -51,10 +51,6 @@ export type Sign1Context = {
     key: CoseKey
     algorithm?: SignatureAlgorithm
   }) => Promise<boolean>
-  x509: {
-    getIssuerNameField: (options: { certificate: Uint8Array; field: string }) => string[]
-    getPublicKey: (options: { certificate: Uint8Array; algorithm?: SignatureAlgorithm }) => Promise<CoseKey>
-  }
 }
 
 export type Sign1Options = {
@@ -68,6 +64,8 @@ export type Sign1Options = {
    * via `detachedPayload` when calling `sign()` / `verifySignature()` / `toBeSigned()`).
    */
   payload: Uint8Array | null
+
+  signature?: Uint8Array
 }
 
 export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStructure> {
@@ -127,24 +125,6 @@ export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStru
     }
 
     return certificate
-  }
-
-  public getIssuingCountry(ctx: Pick<Sign1Context, 'x509'>) {
-    const countryName = ctx.x509.getIssuerNameField({
-      certificate: this.certificate,
-      field: 'C',
-    })[0]
-
-    return countryName
-  }
-
-  public getIssuingStateOrProvince(ctx: Pick<Sign1Context, 'x509'>) {
-    const stateOrProvince = ctx.x509.getIssuerNameField({
-      certificate: this.certificate,
-      field: 'ST',
-    })[0]
-
-    return stateOrProvince
   }
 
   /**
@@ -248,33 +228,18 @@ export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStru
   }
 
   public async verifySignature(
-    options: { key?: CoseKey; detachedPayload?: Uint8Array },
-    ctx: Pick<Sign1Context, 'verify' | 'x509'>
+    { key, detachedPayload }: { key: CoseKey; detachedPayload?: Uint8Array },
+    ctx: Pick<Sign1Context, 'verify'>
   ) {
     const embeddedPayload = this.payload
-    const { detachedPayload } = options
-
     if (embeddedPayload && detachedPayload) {
       throw new Error('Cannot provide detachedPayload when the Sign1 already contains an embedded payload')
-    }
-
-    const publicKey =
-      options.key ??
-      (this.certificate
-        ? await ctx.x509.getPublicKey({
-            certificate: this.certificate,
-            algorithm: this.algorithm,
-          })
-        : undefined)
-
-    if (!publicKey) {
-      throw new CoseCertificateNotFoundError()
     }
 
     return await ctx.verify({
       toBeVerified: this.toBeSigned({ detachedPayload }),
       signature: this.signature,
-      key: publicKey,
+      key,
       algorithm: this.algorithm,
     })
   }
@@ -299,7 +264,7 @@ export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStru
       protectedHeaders,
       unprotectedHeaders,
       payload: options.payload,
-      signature: new Uint8Array(),
+      signature: options.signature ?? new Uint8Array(),
     })
 
     sign1.externalAad = options.externalAad

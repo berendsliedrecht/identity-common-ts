@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'node:crypto'
 import { p256 } from '@noble/curves/nist.js'
 import { hmac } from '@noble/hashes/hmac.js'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { CoseKey, type Mac0Context, type Sign1Context } from '../cose'
+import { CoseKey, type Mac0Context, type Sign1Context } from '@owf/cose'
 
 export const sign1Context: Sign1Context = {
   sign: async (input) => {
