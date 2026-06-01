@@ -38,10 +38,10 @@ suite('StatusListCwtPayload', () => {
       subject: 'https://example.com/statuslists/1',
       issuedAt: new Date(1000000 * 1000),
       statusList: cborStatusList,
-      additionalClaims: {
-        1000: 'hello world',
-        1001: 'Goodbye!',
-      },
+      additionalClaims: new Map([
+        [1000, 'hello world'],
+        [1001, 'Goodbye!'],
+      ]),
     })
 
     const encoded = payload.encode()

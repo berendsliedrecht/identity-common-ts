@@ -28,7 +28,7 @@ export type CreateStatusListCwtPayloadOptions = {
   issuedAt?: Date
   expirationTime?: Date
   timeToLive?: number
-  additionalClaims?: Record<number, unknown>
+  additionalClaims?: Map<number | string, unknown>
 }
 
 export class StatusListCwtPayload extends CborStructure<
@@ -58,7 +58,7 @@ export class StatusListCwtPayload extends CborStructure<
   }
 
   public static create(options: CreateStatusListCwtPayloadOptions) {
-    const map: StatusListCwtPayloadEncodedStructure = new TypedMap([
+    const map = new TypedMap([
       [RegisteredCwtClaimKey.Subject, options.subject],
       [RegisteredCwtClaimKey.IssuedAt, Math.floor((options.issuedAt?.getTime() ?? Date.now()) / 1000)],
       [
@@ -72,10 +72,8 @@ export class StatusListCwtPayload extends CborStructure<
           ? options.statusList
           : StatusListCbor.create({ statusList: options.statusList }),
       ],
-      ...(Object.entries(options.additionalClaims ?? {}).map(([k, v]) => [Number(k), v]) as Array<
-        [number, string | number]
-      >),
-    ])
+      ...(options.additionalClaims ?? new Map()).entries(),
+    ]) satisfies StatusListCwtPayloadEncodedStructure
 
     return new StatusListCwtPayload(statusListCwtPayloadSchema.parse(map.toMap()))
   }
