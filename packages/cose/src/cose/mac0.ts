@@ -243,9 +243,9 @@ export class Mac0 extends CborStructure<Mac0EncodedStructure, Mac0DecodedStructu
     }
 
     // TODO: do we want to check whether key.algorithm and options.algorithm exist?
-    // For some reason, when this is a one-liner it throws a type error that `options.key.algorithm` does not exist on Uint8Array.
-    let macAlgorithm = options.algorithm
-    macAlgorithm ??= options.key instanceof CoseKey ? (options.key.algorithm as MacAlgorithm | undefined) : undefined
+    const macAlgorithm = (options.key instanceof CoseKey ? options.key.algorithm : options.algorithm) as
+      | MacAlgorithm
+      | undefined
 
     if (!macAlgorithm) {
       throw new CoseInvalidAlgorithmError(
@@ -254,7 +254,7 @@ export class Mac0 extends CborStructure<Mac0EncodedStructure, Mac0DecodedStructu
     }
 
     if (!Object.values(MacAlgorithm).includes(macAlgorithm as MacAlgorithm)) {
-      throw new CoseInvalidAlgorithmError('Invalid signature algorithm.')
+      throw new CoseInvalidAlgorithmError('Invalid mac algorithm.')
     }
 
     this.structure.tag = await ctx.authenticate({
