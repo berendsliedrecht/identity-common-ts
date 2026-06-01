@@ -15,7 +15,7 @@ import {
   ProtectedHeaders,
   protectedHeadersEncodedStructure,
   RegisteredCwtHeaderClaimKey,
-  type SignatureAlgorithm,
+  SignatureAlgorithm,
   type UnprotectedHeaderOptions,
   UnprotectedHeaders,
   unprotectedHeadersStructure,
@@ -190,9 +190,14 @@ export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStru
   }
 
   public get algorithm(): SignatureAlgorithm | undefined {
-    const algorithm = this.protectedHeaders.headers?.get(RegisteredCwtHeaderClaimKey.Algorithm)
+    const algorithm = this.protectedHeaders.headers?.get(RegisteredCwtHeaderClaimKey.Algorithm) as
+      | SignatureAlgorithm
+      | undefined
+    if (algorithm && !Object.values(SignatureAlgorithm).includes(algorithm)) {
+      throw new CoseInvalidAlgorithmError()
+    }
 
-    return algorithm as SignatureAlgorithm | undefined
+    return algorithm
   }
 
   public get jwaAlgorithm(): keyof typeof SignatureAlgorithm | undefined {
@@ -301,6 +306,10 @@ export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStru
       )
     }
 
+    if (!Object.values(SignatureAlgorithm).includes(signatureAlgorithm as SignatureAlgorithm)) {
+      throw new CoseInvalidAlgorithmError('Invalid signature algorithm.')
+    }
+
     this.structure.signature = await ctx.sign({
       toBeSigned: Sign1.toBeSigned({
         payload,
@@ -308,7 +317,7 @@ export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStru
         externalAad: options.externalAad,
       }),
       key: options.signingKey,
-      algorithm: signatureAlgorithm,
+      algorithm: signatureAlgorithm as SignatureAlgorithm,
     })
 
     return this
