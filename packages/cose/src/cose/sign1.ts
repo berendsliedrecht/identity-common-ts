@@ -15,7 +15,7 @@ import {
   ProtectedHeaders,
   protectedHeadersEncodedStructure,
   RegisteredCwtHeaderClaimKey,
-  type SignatureAlgorithm,
+  SignatureAlgorithm,
   type UnprotectedHeaderOptions,
   UnprotectedHeaders,
   unprotectedHeadersStructure,
@@ -301,6 +301,10 @@ export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStru
       )
     }
 
+    if (!Object.values(SignatureAlgorithm).includes(signatureAlgorithm as SignatureAlgorithm)) {
+      throw new CoseInvalidAlgorithmError('algorithm provided in the options or key is not a valid signing algorithm')
+    }
+
     this.structure.signature = await ctx.sign({
       toBeSigned: Sign1.toBeSigned({
         payload,
@@ -308,7 +312,7 @@ export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStru
         externalAad: options.externalAad,
       }),
       key: options.signingKey,
-      algorithm: signatureAlgorithm,
+      algorithm: signatureAlgorithm as SignatureAlgorithm,
     })
 
     return this
