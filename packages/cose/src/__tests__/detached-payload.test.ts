@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { CoseKey, Mac0, Sign1, SignatureAlgorithm } from '../../src'
+import { CoseKey, Mac0, MacAlgorithm, Sign1, SignatureAlgorithm } from '../../src'
 import { mac0Context, sign1Context } from './context'
 
 const key = CoseKey.fromJwk({
@@ -190,13 +190,13 @@ describe('Mac0 - detached payload', () => {
   describe('authenticate()', () => {
     test('authenticates with embedded payload', async () => {
       const mac0 = Mac0.create({ payload })
-      await mac0.authenticate({ key: macKey }, mac0Context)
+      await mac0.authenticate({ key: macKey, algorithm: MacAlgorithm.HS256 }, mac0Context)
       expect(mac0.tag.length).toBeGreaterThan(0)
     })
 
     test('authenticates with detachedPayload passed to authenticate() — payload field stays null', async () => {
       const mac0 = Mac0.create({ payload: null })
-      await mac0.authenticate({ key: macKey, detachedPayload }, mac0Context)
+      await mac0.authenticate({ key: macKey, detachedPayload, algorithm: MacAlgorithm.HS256 }, mac0Context)
       expect(mac0.payload).toBeNull()
       expect(mac0.tag.length).toBeGreaterThan(0)
     })

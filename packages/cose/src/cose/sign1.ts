@@ -190,9 +190,14 @@ export class Sign1 extends CborStructure<Sign1EncodedStructure, Sign1DecodedStru
   }
 
   public get algorithm(): SignatureAlgorithm | undefined {
-    const algorithm = this.protectedHeaders.headers?.get(RegisteredCwtHeaderClaimKey.Algorithm)
+    const algorithm = this.protectedHeaders.headers?.get(RegisteredCwtHeaderClaimKey.Algorithm) as
+      | SignatureAlgorithm
+      | undefined
+    if (algorithm && !Object.values(SignatureAlgorithm).includes(algorithm)) {
+      throw new CoseInvalidAlgorithmError()
+    }
 
-    return algorithm as SignatureAlgorithm | undefined
+    return algorithm
   }
 
   public get jwaAlgorithm(): keyof typeof SignatureAlgorithm | undefined {

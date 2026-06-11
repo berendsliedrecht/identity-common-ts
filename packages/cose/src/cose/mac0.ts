@@ -10,7 +10,7 @@ import {
 } from '../cbor'
 import { zUint8Array } from '../utils/zod'
 import { CoseInvalidAlgorithmError, CosePayloadMustBeDefinedError } from './error'
-import { type MacAlgorithm, RegisteredCwtHeaderClaimKey } from './headers/defaults'
+import { MacAlgorithm, RegisteredCwtHeaderClaimKey } from './headers/defaults'
 import {
   type ProtectedHeaderOptions,
   ProtectedHeaders,
@@ -21,7 +21,7 @@ import {
   UnprotectedHeaders,
   type UnprotectedHeadersStructure,
 } from './headers/unprotected-headers'
-import type { CoseKey } from './key'
+import { CoseKey } from './key'
 import { coseKeyToJwkClaim } from './key/jwk'
 
 export const mac0EncodedSchema = z.tuple([
@@ -177,9 +177,14 @@ export class Mac0 extends CborStructure<Mac0EncodedStructure, Mac0DecodedStructu
   }
 
   public get algorithm(): MacAlgorithm | undefined {
-    const algorithm = this.protectedHeaders.headers?.get(RegisteredCwtHeaderClaimKey.Algorithm)
+    const algorithm = this.protectedHeaders.headers?.get(RegisteredCwtHeaderClaimKey.Algorithm) as
+      | MacAlgorithm
+      | undefined
+    if (algorithm && !Object.values(MacAlgorithm).includes(algorithm)) {
+      throw new CoseInvalidAlgorithmError()
+    }
 
-    return algorithm as MacAlgorithm | undefined
+    return algorithm
   }
 
   public get jwaAlgorithm(): keyof typeof MacAlgorithm {
@@ -237,13 +242,28 @@ export class Mac0 extends CborStructure<Mac0EncodedStructure, Mac0DecodedStructu
       throw new CosePayloadMustBeDefinedError()
     }
 
+    // TODO: do we want to check whether key.algorithm and options.algorithm exist?
+    const macAlgorithm = (options.key instanceof CoseKey ? options.key.algorithm : options.algorithm) as
+      | MacAlgorithm
+      | undefined
+
+    if (!macAlgorithm) {
+      throw new CoseInvalidAlgorithmError(
+        'Could not establish mac algorithm. Either provide it in the options directly, or provide it in the signingKey'
+      )
+    }
+
+    if (!Object.values(MacAlgorithm).includes(macAlgorithm as MacAlgorithm)) {
+      throw new CoseInvalidAlgorithmError('Invalid mac algorithm.')
+    }
+
     this.structure.tag = await ctx.authenticate({
       toBeAuthenticated: Mac0.toBeAuthenticated({
         payload,
         protectedHeaders: this.protectedHeaders,
         externalAad: this.externalAad,
       }),
-      algorithm: options.algorithm,
+      algorithm: macAlgorithm,
       key: options.key,
     })
     return this

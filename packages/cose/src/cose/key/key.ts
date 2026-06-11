@@ -203,12 +203,16 @@ export class CoseKey extends CborStructure<CoseKeyEncodedStructure, CoseKeyDecod
   }
 
   public get publicKey() {
-    if (this.keyType !== KeyType.Ec) {
+    if (this.keyType !== KeyType.Ec && this.keyType !== KeyType.Okp) {
       throw new CoseInvalidKtyForRawError()
     }
 
     if (!this.x) {
       throw new CoseXNotDefinedError()
+    }
+
+    if (this.keyType === KeyType.Okp) {
+      return this.x
     }
 
     if (!this.y) {
@@ -218,8 +222,14 @@ export class CoseKey extends CborStructure<CoseKeyEncodedStructure, CoseKeyDecod
     return concatBytes(Uint8Array.from([0x04]), this.x, this.y)
   }
 
+  /**
+   *
+   * @returns the `d` value for `ec` and `okp` key types
+   * @returns the `k` value for `oct` key types
+   *
+   */
   public get privateKey() {
-    if (this.keyType === KeyType.Ec) {
+    if (this.keyType === KeyType.Ec || this.keyType === KeyType.Okp) {
       if (!this.d) {
         throw new CoseDNotDefinedError()
       }
