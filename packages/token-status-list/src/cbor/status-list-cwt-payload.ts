@@ -12,8 +12,8 @@ const statusListCwtPayloadSchema = typedMap(
   [
     [RegisteredCwtClaimKey.Subject, z.string()],
     [RegisteredCwtClaimKey.IssuedAt, z.number()],
-    [RegisteredCwtClaimKey.ExpirationTime, z.number().optional()],
-    [StatusListCwtClaimKey.TimeToLive, z.number().optional()],
+    [RegisteredCwtClaimKey.ExpirationTime, z.number().exactOptional()],
+    [StatusListCwtClaimKey.TimeToLive, z.number().exactOptional()],
     [StatusListCwtClaimKey.StatusList, z.instanceof(StatusListCbor)],
   ],
   { allowAdditionalKeys: true }
@@ -62,11 +62,6 @@ export class StatusListCwtPayload extends CborStructure<
       [RegisteredCwtClaimKey.Subject, options.subject],
       [RegisteredCwtClaimKey.IssuedAt, Math.floor((options.issuedAt?.getTime() ?? Date.now()) / 1000)],
       [
-        RegisteredCwtClaimKey.ExpirationTime,
-        options.expirationTime ? Math.floor(options.expirationTime.getTime() / 1000) : undefined,
-      ],
-      [StatusListCwtClaimKey.TimeToLive, options.timeToLive],
-      [
         StatusListCwtClaimKey.StatusList,
         options.statusList instanceof StatusListCbor
           ? options.statusList
@@ -74,6 +69,14 @@ export class StatusListCwtPayload extends CborStructure<
       ],
       ...(options.additionalClaims ?? new Map()).entries(),
     ]) satisfies StatusListCwtPayloadEncodedStructure
+
+    if (options.expirationTime) {
+      map.set(RegisteredCwtClaimKey.ExpirationTime, Math.floor(options.expirationTime.getTime() / 1000))
+    }
+
+    if (options.timeToLive) {
+      map.set(StatusListCwtClaimKey.TimeToLive, options.timeToLive)
+    }
 
     return new StatusListCwtPayload(statusListCwtPayloadSchema.parse(map.toMap()))
   }
