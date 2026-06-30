@@ -48,7 +48,7 @@ interface PartialWRPRCPayload {
   status?: Status
   purpose?: MultiLangString[]
   credentials?: Credential[]
-  provides_attestations?: Credential[]
+  provides_attestations?: string[]
   intermediary?: Intermediary
 }
 
@@ -259,11 +259,11 @@ export class WRPRCBuilder {
   }
 
   /**
-   * Add a credential the WRP provides (for attestation providers)
+   * Add a schema metadata that the WRP provides (for attestation providers)
    */
-  addProvidedAttestation(credential: Credential): this {
+  addProvidedAttestation(schemaMetadata: string): this {
     this.payload.provides_attestations = this.payload.provides_attestations ?? []
-    this.payload.provides_attestations.push(credential)
+    this.payload.provides_attestations.push(schemaMetadata)
     return this
   }
 

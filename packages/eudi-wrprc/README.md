@@ -5,6 +5,9 @@
 
 Implementation of **ETSI TS 119 475 v1.2.1** - Wallet-Relying Party Registration Certificates (WRPRC) for [Identity Common TypeScript](https://github.com/openwallet-foundation-labs/identity-common-ts).
 
+**Info**
+The `provides_attestations` field in the WRPRC payload is now an array of strings (URIs) instead of an array of Credential objects. This is an upcoming change to the ETSI TS 119 475 standard, and this library has been updated to reflect that change.
+
 ## Overview
 
 This package provides:
